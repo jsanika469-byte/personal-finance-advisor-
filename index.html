@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Personal Finance Advisor Bot</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 22px; }
+  fieldset { margin-bottom: 20px; padding: 16px; border-radius: 8px; }
+  label { display: block; margin: 8px 0 4px; font-size: 14px; }
+  input, select { width: 100%; padding: 6px; box-sizing: border-box; }
+  #expenseRows div { display: flex; gap: 8px; margin-bottom: 6px; }
+  button { margin-top: 12px; padding: 8px 16px; cursor: pointer; }
+  #results { margin-top: 24px; padding: 16px; border-radius: 8px; background: #f7f7f7; display: none; }
+  #results h2 { font-size: 18px; }
+  #suggestions li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Personal Finance Advisor Bot</h1>
+
+<fieldset>
+  <legend>Setup</legend>
+  <label>User ID</label>
+  <input type="number" id="userId" value="1">
+  <label>Month (YYYY-MM)</label>
+  <input type="text" id="month" value="2026-09">
+</fieldset>
+
+<fieldset>
+  <legend>Monthly Income</legend>
+  <label>Amount (₹)</label>
+  <input type="number" id="incomeAmount" placeholder="e.g. 60000">
+  <button onclick="submitIncome()">Save Income</button>
+</fieldset>
+
+<fieldset>
+  <legend>Expenses</legend>
+  <div id="expenseRows">
+    <div>
+      <input type="text" class="expCategory" placeholder="Category (e.g. Rent)">
+      <input type="number" class="expAmount" placeholder="Amount">
+    </div>
+  </div>
+  <button onclick="addExpenseRow()">+ Add Category</button>
+  <button onclick="submitExpenses()">Save Expenses</button>
+</fieldset>
+
+<fieldset>
+  <legend>Goals (optional)</legend>
+  <input type="text" id="goals" placeholder="e.g. Save ₹15,000/month for emergency fund">
+</fieldset>
+
+<button onclick="generateBudgetPlan()">Generate Budget Plan</button>
+
+<div id="results">
+  <h2>Financial Health Summary</h2>
+  <p id="summary"></p>
+  <p id="savings"></p>
+  <h2>Saving Suggestions</h2>
+  <ul id="suggestions"></ul>
+  <h2>Overspent Categories</h2>
+  <p id="overspent"></p>
+  <h2>Recommended Budget</h2>
+  <ul id="recommendedBudget"></ul>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
