@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Personal Finance Advisor Bot</title>
+<style>
+:root{
+  --bg:#060b18;--panel:#0d1526;--panel2:#131e35;--text:#eaf1ff;--muted:#7c8db0;
+  --accent:#22c3ff;--accent2:#3b6dff;--accent3:#7aa8ff;--border:#1c2c4a;
+  --danger:#ff5a72;--danger-bg:#2a1220;--ok:#2fe0c0;--ok-bg:#0d2a28;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){--bg:#eef3fc;--panel:#ffffff;--panel2:#f1f6ff;--text:#0b1730;--muted:#5b6b8c;--border:#dbe6fb;--danger-bg:#ffe6ea;--ok-bg:#e2fbf5;}
+}
+:root[data-theme="light"]{--bg:#eef3fc;--panel:#ffffff;--panel2:#f1f6ff;--text:#0b1730;--muted:#5b6b8c;--border:#dbe6fb;--danger-bg:#ffe6ea;--ok-bg:#e2fbf5;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text);min-height:100%;background-image:radial-gradient(circle at 100% 0%, rgba(59,109,255,.12), transparent 45%);}
+.app{max-width:560px;margin:0 auto;padding:16px 16px 90px;}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.tb-left{display:flex;align-items:center;gap:10px;}
+.hbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer;}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:.01em;}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));}
+.icon-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:7px 10px;font-size:13px;cursor:pointer;}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;cursor:pointer;}
+
+/* Drawer */
+.overlay{position:fixed;inset:0;background:rgba(2,6,16,.55);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;}
+.overlay.show{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:250px;max-width:78vw;background:var(--panel);border-right:1px solid var(--border);
+  transform:translateX(-100%);transition:transform .22s ease;z-index:50;padding:18px 14px;padding-top:calc(18px + env(safe-area-inset-top,0px));
+  display:flex;flex-direction:column;gap:4px;}
+.drawer.show{transform:translateX(0);}
+.drawer .dhead{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:0 6px;}
+.drawer .dhead .brand{font-size:15px;}
+.drawer button.ditem{display:flex;align-items:center;gap:12px;background:none;border:none;color:var(--muted);
+  text-align:left;padding:11px 10px;border-radius:10px;font-size:14px;cursor:pointer;width:100%;}
+.drawer button.ditem .di-icon{font-size:16px;width:22px;text-align:center;}
+.drawer button.ditem.active{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;font-weight:700;}
+.drawer button.ditem:not(.active):hover{background:var(--panel2);}
+.drawer .dfoot{margin-top:auto;padding-top:10px;border-top:1px solid var(--border);}
+
+.screen{display:none;}
+.screen.active{display:block;animation:fade .15s ease;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px;}
+.panel h2{font-size:16px;margin:0 0 4px;}
+.panel .hint{color:var(--muted);font-size:12px;margin-bottom:14px;}
+label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+input,select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:14px;margin-bottom:12px;}
+input:focus,select:focus{outline:2px solid var(--accent2);outline-offset:1px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+button.primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;width:100%;}
+button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;font-weight:600;font-size:13.5px;cursor:pointer;width:100%;}
+.link{color:var(--accent);cursor:pointer;font-size:13px;text-align:center;margin-top:10px;}
+.warn-box{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);border-radius:10px;
+  padding:10px 12px;font-size:13px;margin-bottom:12px;display:none;}
+.warn-box.show{display:block;}
+
+.hero{background:linear-gradient(135deg,#0a1f4d,#123a8f 45%,#1e6fe8);border-radius:18px;padding:26px 20px;margin-bottom:16px;color:#eaf1ff;border:1px solid var(--border);}
+.hero h1{margin:0 0 6px;font-size:21px;}
+.hero p{margin:0;font-size:13px;opacity:.85;}
+.hero button{margin-top:14px;background:#eaf1ff;color:#0a1f4d;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:13.5px;cursor:pointer;}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px;}
+.stat.ok{border-color:var(--ok);}
+.stat.bad{border-color:var(--danger);}
+.stat .l{font-size:10.5px;color:var(--muted);}
+.stat .v{font-size:18px;font-weight:800;margin-top:2px;}
+
+.bars{display:flex;align-items:flex-end;gap:8px;height:100px;margin:10px 0;}
+.bars .bar{flex:1;background:var(--panel2);border-radius:6px 6px 0 0;position:relative;min-height:4px;}
+.bars .bar .fill{position:absolute;bottom:0;left:0;right:0;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--accent),var(--accent2));}
+.bars .bar .fill.exp{background:linear-gradient(180deg,var(--danger),#a4243b);}
+.bars-labels{display:flex;gap:8px;}
+.bars-labels span{flex:1;text-align:center;font-size:10px;color:var(--muted);}
+
+.tx-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+.tx-item:last-child{border-bottom:none;}
+.tx-item .tx-left{display:flex;flex-direction:column;}
+.tx-item .tx-cat{font-weight:600;}
+.tx-item .tx-date{font-size:11px;color:var(--muted);}
+.tx-item .tx-amt.income{color:var(--ok);font-weight:700;}
+.tx-item .tx-amt.expense{color:var(--danger);font-weight:700;}
+.tx-item .tx-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;margin-left:8px;}
+
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.chip{background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted);cursor:pointer;}
+.chip.active{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border-color:transparent;}
+.pill{display:inline-block;background:var(--danger-bg);color:var(--danger);font-size:11.5px;padding:4px 10px;border-radius:999px;margin:2px 4px 2px 0;}
+.budget-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+.budget-item:last-child{border-bottom:none;}
+ul.sugg{padding-left:0;list-style:none;margin:0;}
+ul.sugg li{background:var(--panel2);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13.5px;border-left:3px solid var(--accent);}
+.summary-box{background:var(--panel2);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.55;border-left:3px solid var(--accent2);}
+.empty{color:var(--muted);font-size:12.5px;text-align:center;padding:16px 0;}
+.profile-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+.profile-row:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+
+<div class="drawer" id="drawer">
+  <div class="dhead"><span class="dot" style="width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));"></span>
+    <span class="brand">FinAdvisor</span></div>
+  <button class="ditem" data-r="dashboard" onclick="go('dashboard')"><span class="di-icon">📊</span> Dashboard</button>
+  <button class="ditem" data-r="income" onclick="go('income')"><span class="di-icon">💵</span> Income</button>
+  <button class="ditem" data-r="expenses" onclick="go('expenses')"><span class="di-icon">🧾</span> Expenses</button>
+  <button class="ditem" data-r="budget" onclick="go('budget')"><span class="di-icon">🤖</span> AI Budget</button>
+  <button class="ditem" data-r="reports" onclick="go('reports')"><span class="di-icon">📈</span> Reports</button>
+  <button class="ditem" data-r="profile" onclick="go('profile')"><span class="di-icon">👤</span> Profile</button>
+  <div class="dfoot">
+    <button class="ditem" onclick="doLogout()"><span class="di-icon">🚪</span> Logout</button>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="topbar" id="topbar" style="display:none;">
+    <div class="tb-left">
+      <button class="hbtn" onclick="openDrawer()">☰</button>
+      <div class="brand"><span class="dot"></span> FinAdvisor</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="icon-btn" onclick="toggleTheme()">🌓</button>
+      <div class="avatar" id="topAvatar" onclick="go('profile')">?</div>
+    </div>
+  </div>
+
+  <!-- LANDING -->
+  <div class="screen active" id="screen-landing">
+    <div class="hero">
+      <h1>Your AI-Powered Finance Advisor</h1>
+      <p>Track income and expenses, filter by date range, and get an AI-style budget plan with savings recommendations.</p>
+      <button onclick="go('login')">Get Started →</button>
+    </div>
+    <div class="panel">
+      <h2>What's inside</h2>
+      <div class="hint">All modules working in your browser</div>
+      <div class="budget-item"><span>🔐 Auth</span><span>Register / Login / Session</span></div>
+      <div class="budget-item"><span>💵 Income Tracking</span><span>By date & source</span></div>
+      <div class="budget-item"><span>🧾 Expense Tracking</span><span>Category + date range filter</span></div>
+      <div class="budget-item"><span>🤖 AI Budget Engine</span><span>50/30/20 analysis</span></div>
+      <div class="budget-item"><span>📊 Dashboard & Reports</span><span>Drawer navigation</span></div>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="screen" id="screen-login">
+    <div class="panel">
+      <h2>🔐 Log In</h2>
+      <div class="hint">Session is simulated locally in your browser</div>
+      <div class="warn-box" id="loginWarn"></div>
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+      <button class="primary" onclick="doLogin()">Log In</button>
+      <div class="link" onclick="go('register')">Don't have an account? Register</div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="screen" id="screen-register">
+    <div class="panel">
+      <h2>📝 Create Account</h2>
+      <div class="warn-box" id="registerWarn"></div>
+      <label>Full Name</label>
+      <input type="text" id="regName" placeholder="Jane Doe">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="you@example.com">
+      <label>Password</label>
+      <input type="password" id="regPass" placeholder="Min 4 characters">
+      <button class="primary" onclick="doRegister()">Create Account</button>
+      <div class="link" onclick="go('login')">Already have an account? Log in</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="screen-dashboard">
+    <div class="stat-grid">
+      <div class="stat ok"><div class="l">Total Income</div><div class="v" id="dIncome">₹0</div></div>
+      <div class="stat bad"><div class="l">Total Expenses</div><div class="v" id="dExpense">₹0</div></div>
+      <div class="stat"><div class="l">Net Savings</div><div class="v" id="dSavings">₹0</div></div>
+      <div class="stat"><div class="l">Transactions</div><div class="v" id="dCount">0</div></div>
+    </div>
+    <div class="panel">
+      <h2>Last 6 Months</h2>
+      <div class="bars" id="dashBars"></div>
+      <div class="bars-labels" id="dashBarsLabels"></div>
+    </div>
+    <div class="panel">
+      <h2>Recent Activity</h2>
+      <div id="dashRecent"></div>
+    </div>
+  </div>
+
+  <!-- INCOME -->
+  <div class="screen" id="screen-income">
+    <div class="panel">
+      <h2>💵 Add Income</h2>
+      <div class="row2">
+        <div><label>Amount (₹)</label><input type="number" id="incAmount" placeholder="60000"></div>
+        <div><label>Date</label><input type="date" id="incDate"></div>
+      </div>
+      <label>Source</label>
+      <select id="incSource"><option>Salary</option><option>Freelance</option><option>Business</option><option>Investment</option><option>Other</option></select>
+      <button class="primary" onclick="addIncome()">Add Income</button>
+    </div>
+    <div class="panel">
+      <h2>Filter by Date Range</h2>
+      <div class="row2">
+        <div><label>From</label><input type="date" id="incFrom"></div>
+        <div><label>To</label><input type="date" id="incTo"></div>
+      </div>
+      <button class="secondary" onclick="renderIncomeList()">Apply Filter</button>
+    </div>
+    <div class="panel">
+      <h2>Income History</h2>
+      <div id="incomeList"></div>
+    </div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="screen" id="screen-expenses">
+    <div class="panel">
+      <h2>🧾 Add Expense</h2>
+      <div class="row2">
+        <div><label>Amount (₹)</label><input type="number" id="expAmount" placeholder="3000"></div>
+        <div><label>Date</label><input type="date" id="expDate"></div>
+      </div>
+      <label>Category</label>
+      <select id="expCategory"><option>Rent</option><option>Groceries</option><option>Utilities</option><option>Transport</option><option>Healthcare</option><option>Education</option><option>Entertainment</option><option>Shopping</option><option>Other</option></select>
+      <button class="primary" onclick="addExpense()">Add Expense</button>
+    </div>
+    <div class="panel">
+      <h2>Filter</h2>
+      <div class="chip-row" id="monthChips"></div>
+      <div class="row2">
+        <div><label>From</label><input type="date" id="expFrom"></div>
+        <div><label>To</label><input type="date" id="expTo"></div>
+      </div>
+      <button class="secondary" onclick="renderExpenseList()">Apply Range Filter</button>
+    </div>
+    <div class="panel">
+      <h2>Expense History</h2>
+      <div id="expenseList"></div>
+    </div>
+  </div>
+
+  <!-- AI BUDGET -->
+  <div class="screen" id="screen-budget">
+    <div class="panel">
+      <h2>🤖 AI Budget Analysis</h2>
+      <div class="hint">Analyzes all logged income & expenses using a 50/30/20-style engine</div>
+      <label>Savings Goal (optional)</label>
+      <input type="text" id="budgetGoal" placeholder="e.g. Build a 3-month emergency fund">
+      <button class="primary" onclick="generateBudget()">Generate Budget Plan ✨</button>
+    </div>
+    <div class="panel" id="budgetResults" style="display:none;">
+      <div class="stat-grid">
+        <div class="stat"><div class="l">Savings Rate</div><div class="v" id="bRate">0%</div></div>
+        <div class="stat ok"><div class="l">Projected Savings</div><div class="v" id="bSavings">₹0</div></div>
+      </div>
+      <h2 style="font-size:14px;">Overspent Categories</h2>
+      <div id="bOverspent" style="margin-bottom:12px;"></div>
+      <h2 style="font-size:14px;">Recommended Budget</h2>
+      <div id="bBudget" style="margin-bottom:12px;"></div>
+      <h2 style="font-size:14px;">Suggestions</h2>
+      <ul class="sugg" id="bSuggestions"></ul>
+      <h2 style="font-size:14px;">Health Summary</h2>
+      <div class="summary-box" id="bSummary"></div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="screen" id="screen-reports">
+    <div class="panel">
+      <h2>📈 Category-Wise Breakdown</h2>
+      <div id="reportCategories"></div>
+    </div>
+    <div class="panel">
+      <h2>📜 Saved Budget Reports</h2>
+      <div id="reportHistory"></div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="panel">
+      <h2>👤 Profile</h2>
+      <div class="profile-row"><span>Name</span><span id="pName">—</span></div>
+      <div class="profile-row"><span>Email</span><span id="pEmail">—</span></div>
+      <div class="profile-row"><span>Member since</span><span id="pSince">—</span></div>
+      <div class="profile-row"><span>Total transactions</span><span id="pCount">—</span></div>
+    </div>
+    <div class="panel">
+      <button class="secondary" onclick="doLogout()">Secure Logout</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DB_KEY = "finadvisor_db_v2";
+function loadDB(){ try{ const r=localStorage.getItem(DB_KEY); return r?JSON.parse(r):{users:{},currentUser:null,income:[],expenses:[],reports:[]}; }catch(e){ return {users:{},currentUser:null,income:[],expenses:[],reports:[]}; } }
+function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }catch(e){} }
+let db = loadDB();
+
+function fmt(n){ return "₹" + Math.round(n||0).toLocaleString("en-IN"); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function toggleTheme(){ const el=document.documentElement; el.setAttribute("data-theme", el.getAttribute("data-theme")==="dark"?"light":"dark"); }
+
+const PROTECTED = ["dashboard","income","expenses","budget","reports","profile"];
+
+// ---- Drawer ----
+function openDrawer(){ document.getElementById("drawer").classList.add("show"); document.getElementById("overlay").classList.add("show"); }
+function closeDrawer(){ document.getElementById("drawer").classList.remove("show"); document.getElementById("overlay").classList.remove("show"); }
+
+// ---- Routing (with auth guard) ----
+function go(route){
+  const authed = !!(db.currentUser && db.users[db.currentUser]);
+  if (PROTECTED.includes(route) && !authed) {
+    showWarn("loginWarn", "You must log in before accessing that page.");
+    route = "login";
+  }
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+route).classList.add("active");
+  document.querySelectorAll(".ditem[data-r]").forEach(b=>b.classList.toggle("active", b.dataset.r===route));
+  closeDrawer();
+  window.scrollTo({top:0,behavior:"smooth"});
+  document.getElementById("topbar").style.display = authed ? "flex" : "none";
+  if (route==="dashboard") renderDashboard();
+  if (route==="income") renderIncomeList();
+  if (route==="expenses") { renderMonthChips(); renderExpenseList(); }
+  if (route==="reports") renderReports();
+  if (route==="profile") renderProfile();
+}
+
+function showWarn(elId, msg){
+  const el = document.getElementById(elId);
+  el.textContent = "⚠ " + msg;
+  el.classList.add("show");
+}
+function hideWarn(elId){ document.getElementById(elId).classList.remove("show"); }
+
+// ---- Auth ----
+function doRegister(){
+  hideWarn("registerWarn");
+  const name=document.getElementById("regName").value.trim();
+  const email=document.getElementById("regEmail").value.trim().toLowerCase();
+  const pass=document.getElementById("regPass").value;
+  if(!name||!email||pass.length<4){ showWarn("registerWarn","Fill all fields — password needs at least 4 characters."); return; }
+  if(db.users[email]){ showWarn("registerWarn","An account with this email already exists."); return; }
+  db.users[email] = {name, email, pass, since:todayStr()};
+  db.currentUser = email;
+  saveDB();
+  go("dashboard");
+}
+function doLogin(){
+  hideWarn("loginWarn");
+  const email=document.getElementById("loginEmail").value.trim().toLowerCase();
+  const pass=document.getElementById("loginPass").value;
+  const u=db.users[email];
+  if(!u){ showWarn("loginWarn","No account found with this email."); return; }
+  if(u.pass!==pass){ showWarn("loginWarn","Incorrect password. Please try again."); return; }
+  db.currentUser = email;
+  saveDB();
+  go("dashboard");
+}
+function doLogout(){
+  db.currentUser = null;
+  saveDB();
+  closeDrawer();
+  go("landing");
+}
+
+// ---- Income ----
+function addIncome(){
+  const amount=parseFloat(document.getElementById("incAmount").value)||0;
+  const date=document.getElementById("incDate").value || todayStr();
+  const source=document.getElementById("incSource").value;
+  if(!amount){ alert("Enter an amount."); return; }
+  db.income.push({user:db.currentUser, amount, date, source, id:Date.now()});
+  saveDB();
+  document.getElementById("incAmount").value="";
+  renderIncomeList();
+}
+function renderIncomeList(){
+  const from=document.getElementById("incFrom").value;
+  const to=document.getElementById("incTo").value;
+  let items = db.income.filter(i=>i.user===db.currentUser);
+  if(from) items = items.filter(i=>i.date>=from);
+  if(to) items = items.filter(i=>i.date<=to);
+  items.sort((a,b)=>b.date.localeCompare(a.date));
+  const box=document.getElementById("incomeList");
+  box.innerHTML = items.length ? items.map(i=>`
+    <div class="tx-item"><div class="tx-left"><span class="tx-cat">${i.source}</span><span class="tx-date">${i.date}</span></div>
+    <span class="tx-amt income">+${fmt(i.amount)}</span><button class="tx-del" onclick="delIncome(${i.id})">✕</button></div>`).join("")
+    : `<div class="empty">No income entries in this range</div>`;
+}
+function delIncome(id){ db.income = db.income.filter(i=>i.id!==id); saveDB(); renderIncomeList(); }
+
+// ---- Expenses ----
+function renderMonthChips(){
+  const months = [...new Set(db.expenses.filter(e=>e.user===db.currentUser).map(e=>e.date.slice(0,7)))].sort().reverse().slice(0,6);
+  const box=document.getElementById("monthChips");
+  box.innerHTML = `<span class="chip active" data-m="" onclick="pickMonth('')">All</span>` +
+    months.map(m=>`<span class="chip" data-m="${m}" onclick="pickMonth('${m}')">${m}</span>`).join("");
+}
+function pickMonth(m){
+  document.querySelectorAll("#monthChips .chip").forEach(c=>c.classList.toggle("active", c.dataset.m===m));
+  if(m){ document.getElementById("expFrom").value = m+"-01"; document.getElementById("expTo").value = m+"-31"; }
+  else { document.getElementById("expFrom").value=""; document.getElementById("expTo").value=""; }
+  renderExpenseList();
+}
+function addExpense(){
+  const amount=parseFloat(document.getElementById("expAmount").value)||0;
+  const date=document.getElementById("expDate").value || todayStr();
+  const category=document.getElementById("expCategory").value;
+  if(!amount){ alert("Enter an amount."); return; }
+  db.expenses.push({user:db.currentUser, amount, date, category, id:Date.now()});
+  saveDB();
+  document.getElementById("expAmount").value="";
+  renderMonthChips();
+  renderExpenseList();
+}
+function renderExpenseList(){
+  const from=document.getElementById("expFrom").value;
+  const to=document.getElementById("expTo").value;
+  let items = db.expenses.filter(e=>e.user===db.currentUser);
+  if(from) items = items.filter(e=>e.date>=from);
+  if(to) items = items.filter(e=>e.date<=to);
+  items.sort((a,b)=>b.date.localeCompare(a.date));
+  const box=document.getElementById("expenseList");
+  box.innerHTML = items.length ? items.map(e=>`
+    <div class="tx-item"><div class="tx-left"><span class="tx-cat">${e.category}</span><span class="tx-date">${e.date}</span></div>
+    <span class="tx-amt expense">-${fmt(e.amount)}</span><button class="tx-del" onclick="delExpense(${e.id})">✕</button></div>`).join("")
+    : `<div class="empty">No expenses in this range</div>`;
+}
+function delExpense(id){ db.expenses = db.expenses.filter(e=>e.id!==id); saveDB(); renderMonthChips(); renderExpenseList(); }
+
+// ---- Dashboard ----
+function userIncome(){ return db.income.filter(i=>i.user===db.currentUser); }
+function userExpenses(){ return db.expenses.filter(e=>e.user===db.currentUser); }
+
+function renderDashboard(){
+  const inc = userIncome(), exp = userExpenses();
+  const totalIncome = inc.reduce((s,i)=>s+i.amount,0);
+  const totalExpense = exp.reduce((s,e)=>s+e.amount,0);
+  document.getElementById("dIncome").textContent = fmt(totalIncome);
+  document.getElementById("dExpense").textContent = fmt(totalExpense);
+  document.getElementById("dSavings").textContent = fmt(totalIncome-totalExpense);
+  document.getElementById("dCount").textContent = inc.length+exp.length;
+
+  const months = [];
+  for(let i=5;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push(d.toISOString().slice(0,7)); }
+  const monthData = months.map(m=>{
+    const mi = inc.filter(x=>x.date.startsWith(m)).reduce((s,x)=>s+x.amount,0);
+    const me = exp.filter(x=>x.date.startsWith(m)).reduce((s,x)=>s+x.amount,0);
+    return {m, mi, me};
+  });
+  const maxV = Math.max(1, ...monthData.map(d=>Math.max(d.mi,d.me)));
+  document.getElementById("dashBars").innerHTML = monthData.map(d=>`
+    <div class="bar" style="height:100%;"><div class="fill" style="height:${(d.mi/maxV*100)||0}%"></div></div>
+    <div class="bar" style="height:100%;"><div class="fill exp" style="height:${(d.me/maxV*100)||0}%"></div></div>`).join("");
+  document.getElementById("dashBarsLabels").innerHTML = monthData.map(d=>`<span style="flex:2;">${d.m.slice(5)}</span>`).join("");
+
+  const recent = [...inc.map(i=>({...i,type:"income",label:i.source})), ...exp.map(e=>({...e,type:"expense",label:e.category}))]
+    .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  document.getElementById("dashRecent").innerHTML = recent.length ? recent.map(r=>`
+    <div class="tx-item"><div class="tx-left"><span class="tx-cat">${r.label}</span><span class="tx-date">${r.date}</span></div>
+    <span class="tx-amt ${r.type}">${r.type==="income"?"+":"-"}${fmt(r.amount)}</span></div>`).join("")
+    : `<div class="empty">No activity yet — add income or expenses</div>`;
+}
+
+// ---- AI Budget Engine ----
+function analyze(income, expenses, goal){
+  const valid = expenses;
+  const totalExpenses = valid.reduce((s,e)=>s+e.amount,0);
+  const needs=["rent","groceries","utilities","transport","healthcare","education"];
+  const byCategory = {};
+  valid.forEach(e=>{ byCategory[e.category]=(byCategory[e.category]||0)+e.amount; });
+  const overspent=[]; const recommended={};
+  Object.entries(byCategory).forEach(([cat,amt])=>{
+    const share = income>0 ? amt/income : 0;
+    const isNeed = needs.some(n=>cat.toLowerCase().includes(n));
+    const cap = isNeed?0.15:0.08;
+    if(share>cap) overspent.push(cat);
+    recommended[cat] = Math.round(income*Math.min(share,cap)) || Math.round(amt*0.85);
+  });
+  const projectedSavings = Math.max(income-totalExpenses, income-Object.values(recommended).reduce((a,b)=>a+b,0));
+  const rate = income>0 ? (projectedSavings/income)*100 : 0;
+  const suggestions=[];
+  if(overspent.length) suggestions.push(`Reduce spending in ${overspent.slice(0,2).join(" and ")} — above the recommended share of income.`);
+  if(rate<20) suggestions.push("Trim discretionary categories to push savings toward the 20% target.");
+  suggestions.push("Automate a fixed transfer to savings right after each income entry.");
+  if(goal) suggestions.push(`Toward "${goal}" — set aside a fixed amount before discretionary spend.`);
+  suggestions.push("Review recurring subscriptions — small charges add up over months.");
+  let health;
+  if(rate>=20) health="Your finances look healthy — saving at or above the recommended 20% rate.";
+  else if(rate>=10) health="You're saving, but below the ideal 20% mark. A few targeted cuts would help.";
+  else if(rate>=0) health="Savings are thin — start with the overspent categories first.";
+  else health="You're spending more than you earn. Cut the largest non-essential category immediately.";
+  return {totalIncome:income, totalExpenses, overspent_categories:overspent, recommended_budget:recommended,
+    saving_suggestions:suggestions, projected_monthly_savings:Math.round(projectedSavings), savings_rate:Math.round(rate), financial_health_summary:health};
+}
+function generateBudget(){
+  const inc = userIncome().reduce((s,i)=>s+i.amount,0);
+  const exp = userExpenses();
+  if(!inc || exp.length===0){ alert("Add at least some income and expenses first."); return; }
+  const goal = document.getElementById("budgetGoal").value.trim();
+  const r = analyze(inc, exp, goal);
+  document.getElementById("budgetResults").style.display="block";
+  document.getElementById("bRate").textContent = r.savings_rate+"%";
+  document.getElementById("bSavings").textContent = fmt(r.projected_monthly_savings);
+  document.getElementById("bOverspent").innerHTML = r.overspent_categories.length
+    ? r.overspent_categories.map(c=>`<span class="pill">${c}</span>`).join("") : `<div class="empty">None — balanced spending</div>`;
+  document.getElementById("bBudget").innerHTML = Object.entries(r.recommended_budget).map(([c,a])=>`<div class="budget-item"><span>${c}</span><span>${fmt(a)}</span></div>`).join("");
+  document.getElementById("bSuggestions").innerHTML = r.saving_suggestions.map(s=>`<li>${s}</li>`).join("");
+  document.getElementById("bSummary").textContent = r.financial_health_summary;
+  db.reports.unshift({user:db.currentUser, date:new Date().toISOString(), ...r});
+  db.reports = db.reports.slice(0,20);
+  saveDB();
+}
+
+// ---- Reports ----
+function renderReports(){
+  const exp = userExpenses();
+  const byCat = {};
+  exp.forEach(e=>{ byCat[e.category]=(byCat[e.category]||0)+e.amount; });
+  const total = Object.values(byCat).reduce((a,b)=>a+b,0) || 1;
+  const box = document.getElementById("reportCategories");
+  box.innerHTML = Object.keys(byCat).length ? Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,a])=>`
+    <div class="budget-item"><span>${c} (${Math.round(a/total*100)}%)</span><span>${fmt(a)}</span></div>`).join("")
+    : `<div class="empty">No expenses logged yet</div>`;
+
+  const reports = db.reports.filter(r=>r.user===db.currentUser);
+  const hbox = document.getElementById("reportHistory");
+  hbox.innerHTML = reports.length ? reports.map(r=>{
+    const d=new Date(r.date);
+    return `<div class="tx-item"><div class="tx-left"><span class="tx-cat">${d.toLocaleDateString()}</span><span class="tx-date">${r.savings_rate}% savings rate</span></div><span class="tx-amt income">${fmt(r.projected_monthly_savings)}</span></div>`;
+  }).join("") : `<div class="empty">No budget reports generated yet</div>`;
+}
+
+// ---- Profile ----
+function renderProfile(){
+  const u = db.users[db.currentUser];
+  if(!u) return;
+  document.getElementById("pName").textContent = u.name;
+  document.getElementById("pEmail").textContent = u.email;
+  document.getElementById("pSince").textContent = u.since;
+  document.getElementById("pCount").textContent = userIncome().length + userExpenses().length;
+  document.getElementById("topAvatar").textContent = u.name.charAt(0).toUpperCase();
+}
+
+// ---- Init ----
+document.getElementById("incDate").value = todayStr();
+document.getElementById("expDate").value = todayStr();
+if (db.currentUser && db.users[db.currentUser]) go("dashboard"); else go("landing");
+</script>
+</body>
+</html>
